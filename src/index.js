@@ -1,16 +1,19 @@
-import { renderTitle, generateFirstQuestion, checkAnswer } from './ui.js'
+import { renderTitle, generateFirstQuestion, generateQuestion, checkAnswer, setCurrentQuestion } from './ui.js'
 import { getStoredQuizz } from './model.js'
 
 const initialyze = () => {
     renderTitle()
-
     const storedQuizz = getStoredQuizz()
+    
     if (storedQuizz != null) {
-        // TODO : display previous questions if there are any in local storage
+        storedQuizz.forEach(q => {
+            generateQuestion(q)
+        })
+
+        setCurrentQuestion(storedQuizz.length)
     }
 
     generateFirstQuestion()
-
     document.getElementById("btn").addEventListener("click", checkAnswer)
 }
 

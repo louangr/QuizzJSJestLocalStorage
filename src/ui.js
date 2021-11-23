@@ -1,10 +1,15 @@
-import { hasToDisplayNextQuestion, isRightAnswer, storeQuizz, removeStoredQuizz } from './model.js'
+import { hasToDisplayNextQuestion, isRightAnswer, storeQuizz, removeStoredQuizz, getGoodUserAnswer } from './model.js'
 import { resources } from "./resources.js"
 
+const disabledTimerColor = "#909090"
+const timerTimeInSecs = 10
+
 let currentQuestion = 0
-let goodUserAnswer = 0
-let storedQuizz = []
 let timerInterval
+
+const setCurrentQuestion = (newCurrentQuestion) => {
+    currentQuestion = newCurrentQuestion
+}
 
 const renderTitle = () => {
     const h1 = document.createElement("h1")
@@ -26,8 +31,7 @@ const generateTimedQuestion = () => {
         currentTimer.textContent--
         
         if (currentTimer.textContent < 1) {
-            storedQuizz.push({ text: resources.questions[currentQuestion].text, userAnswer: "", timer: "0" })
-            storeQuizz(storedQuizz)
+            storeQuizz(resources.questions[currentQuestion].text)
 
             clearInterval(timerInterval)
             disabledAnsweredQuestion(currentInput, currentTimer)
@@ -36,8 +40,10 @@ const generateTimedQuestion = () => {
     }, 1000)
 }
 
-const generateQuestion = () => {
-    const q = resources.questions[currentQuestion]
+const generateQuestion = (restoredQuestion = null) => {
+    const q = restoredQuestion === null
+        ? resources.questions[currentQuestion]
+        : restoredQuestion
 
     const text = document.createElement("p")
     text.id = `q${q.number}`
@@ -46,6 +52,8 @@ const generateQuestion = () => {
     const input = document.createElement("input")
     input.id = `a${q.number}`
     input.type = "text"
+    restoredQuestion !== null && (input.value = q.userAnswer)
+    restoredQuestion !== null && (input.disabled = true)
 
     const btn = document.createElement("button")
     btn.id = "btn"
@@ -54,17 +62,18 @@ const generateQuestion = () => {
 
     const timer = document.createElement("p")
     timer.id = `t${q.number}`
-    timer.textContent = 10
+    timer.textContent = restoredQuestion !== null ? q.timer : timerTimeInSecs
+    restoredQuestion !== null && (timer.style.color = disabledTimerColor)
 
     document.body.appendChild(text)
     document.body.appendChild(input)
-    document.body.appendChild(btn)
+    restoredQuestion ?? (document.body.appendChild(btn))
     document.body.appendChild(timer)
 }
 
 const disabledAnsweredQuestion = (currentInput, currentTimer) => {
     currentInput.disabled = true;
-    currentTimer.style.color = '#909090'
+    currentTimer.style.color = disabledTimerColor
     document.getElementById("btn").remove()
 }
 
@@ -74,7 +83,7 @@ const clearCurrentInput = (currentInput) => {
 
 const generateFooter = () => {
     const p = document.createElement("p")
-    p.textContent = resources.scoreLabel.replace("{1}", goodUserAnswer).replace("{2}", resources.questions.length)
+    p.textContent = resources.scoreLabel.replace("{1}", getGoodUserAnswer()).replace("{2}", resources.questions.length)
     document.body.appendChild(p)
 }
 
@@ -82,11 +91,9 @@ const generateNextQuestionIfNecessary = () => {
     if (hasToDisplayNextQuestion(currentQuestion)) {
         currentQuestion++
         generateTimedQuestion()
-        return true
     } else {
         removeStoredQuizz()
         generateFooter()
-        return false
     }
 }
 
@@ -96,10 +103,7 @@ const checkAnswer = () => {
     const currentUserAnswer = currentInput.value
     
     if (isRightAnswer(currentQuestion, currentUserAnswer)) {
-        storedQuizz.push({ text: resources.questions[currentQuestion].text, userAnswer: currentUserAnswer, timer: currentTimer.textContent })
-        storeQuizz(storedQuizz)
-
-        goodUserAnswer++
+        storeQuizz(resources.questions[currentQuestion].text, currentUserAnswer, currentTimer.textContent)
         clearInterval(timerInterval)
         disabledAnsweredQuestion(currentInput, currentTimer)
         generateNextQuestionIfNecessary()
@@ -111,5 +115,7 @@ const checkAnswer = () => {
 export {
     renderTitle,
     generateFirstQuestion,
-    checkAnswer
+    checkAnswer,
+    generateQuestion,
+    setCurrentQuestion
 }
