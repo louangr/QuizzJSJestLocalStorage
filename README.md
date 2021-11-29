@@ -1,4 +1,4 @@
-# Quizz GERAY BAGLAN
+# Quizz GERAY Louan
 
 Pour lancer le projet avec VS Code :
   - `npm install` à la racine du projet
